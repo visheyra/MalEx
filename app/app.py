@@ -1,9 +1,13 @@
 #!/usr/bin/env python2
 import coloredlogs
+import argparse
+import logging as log
+
+from binary_load import load_array
+from binary_match import Match
+
 coloredlogs.install()
 
-import argparse
-from binary_load import load_array
 
 def parse():
     parser = argparse.ArgumentParser(description="convert binary to \
@@ -18,14 +22,25 @@ def parse():
                         '--shared',
                         dest='shared',
                         action='store_true',
-                        help='switch on/off loading of shared objects',
+                        help='switch for loading of shared objects',
                         default=False)
+    parser.add_argument('-m',
+                        '--match',
+                        dest='match',
+                        action='store_true',
+                        help="switch for naive isomorphism detection between \
+                            samples based on VF2")
     return parser.parse_args()
 
 
 def main():
     args = parse()
-    _ = load_array(args)
+    loaded_bins = load_array(args)
+    if args.match:
+        m = Match()
+        m.feed(*loaded_bins)
+        for i in m.compare():
+            log.info("[{}] <{}> match [{}] <{}>".format(*i))
 
 
 if __name__ == '__main__':
