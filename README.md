@@ -1,4 +1,4 @@
-# Regular-Language-For-Malware-Matching
+# MalEx
 
 Convert a an executable to an abstract representation for matching procedures.
 
