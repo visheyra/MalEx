@@ -1,0 +1,7 @@
+language: generic # don't install any environment
+
+script: bash ./deploy_docs.sh
+env:
+  global:
+  - ENCRYPTION_LABEL: "openssl aes-256-cbc -K $encrypted_e1649ad322fe_key -iv $encrypted_e1649ad322fe_iv -in id_rsa_travis_deployment.enc -out ~\/.ssh/id_rsa_travis_deployment -d"
+  - COMMIT_AUTHOR_EMAIL: "amaury.ravanel@gmail.com"
