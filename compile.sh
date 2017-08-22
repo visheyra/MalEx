@@ -10,4 +10,4 @@ rm -rf public
 cd ../public
 git add --all
 git commit -m "automatic build from the CI to build the site"
-git push upstream gh-pages
+git push origin gh-pages
