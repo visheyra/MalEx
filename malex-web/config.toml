@@ -2,7 +2,6 @@ baseURL = "https://visheyra.github.io/MalEx"
 languageCode = "en-us"
 title = "MalEx"
 theme = "docdock"
-publishDir= "../docs"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON" ]
