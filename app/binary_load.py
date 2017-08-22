@@ -14,6 +14,7 @@ class Binary:
         self.loader = self.proj.loader
         self.target = self.loader.main_bin
         self.symbols = {}
+        self.function_call_graph = {}
         self.infos = {}
         log.info("start extracting informations from binary")
         self.populate()
@@ -24,9 +25,25 @@ class Binary:
                 "name": self.proj.filename,
                 "arch": self.infos["arch"],
                 "objects": [x.binary for x in self.infos["loaded"]],
+                "calling graph": self.function_call_graph
             },
             indent=4
         )
+
+    def generate_function_calling_graph(self):
+        for name, func in self.symbols.items():
+            log.info("Found that function {} is called {} \
+                     times".format(func.name, len(func.get_call_sites())))
+            for call in func.get_call_sites():
+                try:
+                    target_addr = func.get_call_target(call)
+                    target_func = self.proj.kb.functions[target_addr]
+                    self.function_call_graph[func.name]["callees"].append(target_func.name)
+                    self.function_call_graph[target_func.name]["callers"].append(func.name)
+                    self.function_call_graph[func.name]["offset"] = func.addr
+                    log.debug("found link between {} and {}")
+                except KeyError:
+                    pass
 
     def populate(self):
         log.info("extracting meta")
@@ -35,7 +52,8 @@ class Binary:
         self.build_cfg()
         log.info("extracting symbols")
         self.lookup_symbols()
-        log.info("Extract artifacts from CFG")
+        log.info("Extract calling function graph")
+        self.generate_function_calling_graph()
         try:
             self.extract_artefacts_from_func()
         except Exception as e:
@@ -50,6 +68,7 @@ class Binary:
         for addr, symbol in self.proj.kb.functions.iteritems():
             log.debug("found symbol {}".format(symbol.name))
             self.symbols[symbol.name] = symbol
+            self.function_call_graph[symbol.name] = {"offset": None, "callers": [], "callees": []}
         log.info("found {} symbols".format(len(self.symbols)))
 
     def build_cfg(self):
