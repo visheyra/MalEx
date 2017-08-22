@@ -1,7 +1,8 @@
-baseURL = "http://example.org/"
+baseURL = "https://visheyra.github.io/MalEx"
 languageCode = "en-us"
-title = "My New Hugo Site"
+title = "MalEx"
 theme = "docdock"
+publishDir= "../docs"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON" ]
