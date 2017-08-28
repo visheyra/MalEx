@@ -1,3 +1,5 @@
 coloredlogs
 angr
 angr-utils
+pyyaml
+claripy

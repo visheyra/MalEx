@@ -1,13 +1,21 @@
 #!/usr/bin/env python2
 
 import networkx as nx
+from networkx import isomorphism as ism
 import logging as log
+import multiprocessing
 
 
 class Match:
 
     def __init__(self):
         self.binaries = []
+        self.results = {
+            "bins": [],
+            # {"first": smth, "second": smth, "isomorphism": True/False, "possible_isomorphism": True/False}
+            "funcs": []
+            # {"first": {"binary": smth, "func": smth}, second: {"binary": smth, "func": smth}, isomorphism: True/False, possible_isomorphism: True/False}}
+        }
 
     def feed(self, *args):
         """
@@ -17,40 +25,81 @@ class Match:
             self.binaries.append(b)
             log.info("loaded binary {} for matching".format(b.proj.filename))
 
+    @staticmethod
+    def batch_compare_graph(g_one, g_two):
+        print(g_one, g_two)
+        m = ism.GraphMatcher(g_one, g_two)
+        return (m.is_isomorphic(), m.subgraph_is_isomorphic())
+
     def compare(self):
-        """
-        Compare
-        """
-        match = []
-        if len(self.binaries) <= 1:
-            log.error("Can't perform matching, too few binaries feeded")
-            return []
-        for i in range(len(self.binaries)):
-            mb = self.binaries.pop()
-            log.debug("matching binary {}".format(mb.proj.filename))
-            log.info("found {} symbols in {}".format(
-                len(mb.infos["vfg"]),
-                mb.proj.filename))
-            for tb in self.binaries:
-                log.info("match against {} symbols in {}".format(
-                    len(tb.infos["vfg"]),
-                    mb.proj.filename))
-                for mb_name, mb_symbol in mb.infos["vfg"].items():
-                    for tb_name, tb_symbol in tb.infos["vfg"].items():
-                        if nx.is_isomorphic(mb_symbol.graph, tb_symbol.graph):
-                            log.debug("[{}] from <{}> match [{}] \
-                                     from <{}>".format(
-                                         mb_name,
-                                         mb.proj.filename,
-                                         tb_name,
-                                         tb.proj.filename))
-                            fg = (mb_name, mb.proj.filename, tb_name,
-                                  tb.proj.filename)
-                            gf = (mb_name, mb.proj.filename, tb_name,
-                                  tb.proj.filename)
-                            if fg in match or gf in match:
-                                continue
-                            else:
-                                match.append(fg)
-            self.binaries.append(mb)
-            return match
+        bins = self.init()
+        print bins
+        while len(bins) is not 0:
+            b_key, b_graph = bins.popitem()
+            log.info("Now commparing {} against targets".format(b_key))
+
+            # Program Level Comparison
+            for k_target, v_target in bins.items():
+
+                # Compare overall CFG
+                print "========>", b_graph, v_target
+                iso, psb_iso = Match.batch_compare_graph(
+                    b_graph["cfg"],
+                    v_target["cfg"])
+                self.results["bins"].append({
+                    "first": b_key,
+                    "second": k_target,
+                    "isomorphism": iso,
+                    "possible_isomorphism": psb_iso
+                })
+
+                # Compare per func CFG
+                for bk_func, bv_func in b_graph["functions"].items():
+                    for tk_func, tv_func in v_target["functions"].items():
+                        iso, psb_iso = Match.batch_compare_graph(
+                            bv_func,
+                            tv_func
+                        )
+                        self.results["funcs"].append({
+                            "first": {
+                                "binary": b_key,
+                                "func": bk_func,
+                            },
+                            "second": {
+                                "binary": k_target,
+                                "func": tk_func,
+                            },
+                            "isomorphism": iso,
+                            "possible_isomorphism": psb_iso,
+                        })
+
+    def output(self):
+        import json
+        print json.dumps(self.results, indent=4)
+        print " ==== Comparison output === "
+        print " ========================== "
+        print "\n"
+        print " Program level comparison "
+        for entry in self.results["bins"]:
+            print(" = [{}] and [{}] isomorphism: {} possible_isomorphism: {} = ".format(
+                entry["first"],
+                entry["second"],
+                entry["isomorphism"],
+                entry["possible_isomorphism"]
+            ))
+        print " ========================== "
+        for entry in self.results["funcs"]:
+            print(" = [{}] from [{}] and [{}] from [{}] isomorphism: {} possible_isomorphism: {} = ".format(
+                entry["first"]["binary"],
+                entry["first"]["func"],
+                entry["second"]["binary"],
+                entry["second"]["func"],
+                entry["isomorphism"],
+                entry["possible_isomorphism"]
+            ))
+
+    def init(self):
+        bins = {}
+        for b in self.binaries:
+            bins[b.filename] = b.__graph__()
+        return bins
