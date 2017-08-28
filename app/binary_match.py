@@ -3,7 +3,6 @@
 import networkx as nx
 from networkx import isomorphism as ism
 import logging as log
-import multiprocessing
 
 
 class Match:
@@ -12,9 +11,12 @@ class Match:
         self.binaries = []
         self.results = {
             "bins": [],
-            # {"first": smth, "second": smth, "isomorphism": True/False, "possible_isomorphism": True/False}
+            # {"first": smth, "second": smth,
+            # "isomorphism": True/False, "possible_isomorphism": True/False}
             "funcs": []
-            # {"first": {"binary": smth, "func": smth}, second: {"binary": smth, "func": smth}, isomorphism: True/False, possible_isomorphism: True/False}}
+            # {"first": {"binary": smth, "func": smth},
+            # second: {"binary": smth, "func": smth},
+            # isomorphism: True/False, possible_isomorphism: True/False}}
         }
 
     def feed(self, *args):
@@ -27,13 +29,11 @@ class Match:
 
     @staticmethod
     def batch_compare_graph(g_one, g_two):
-        print(g_one, g_two)
         m = ism.GraphMatcher(g_one, g_two)
         return (m.is_isomorphic(), m.subgraph_is_isomorphic())
 
     def compare(self):
         bins = self.init()
-        print bins
         while len(bins) is not 0:
             b_key, b_graph = bins.popitem()
             log.info("Now commparing {} against targets".format(b_key))
@@ -42,7 +42,6 @@ class Match:
             for k_target, v_target in bins.items():
 
                 # Compare overall CFG
-                print "========>", b_graph, v_target
                 iso, psb_iso = Match.batch_compare_graph(
                     b_graph["cfg"],
                     v_target["cfg"])
@@ -74,14 +73,13 @@ class Match:
                         })
 
     def output(self):
-        import json
-        print json.dumps(self.results, indent=4)
         print " ==== Comparison output === "
         print " ========================== "
         print "\n"
         print " Program level comparison "
         for entry in self.results["bins"]:
-            print(" = [{}] and [{}] isomorphism: {} possible_isomorphism: {} = ".format(
+            print(" = [{}] and [{}] isomorphism:\
+                  {} possible_isomorphism: {} = ".format(
                 entry["first"],
                 entry["second"],
                 entry["isomorphism"],
@@ -89,7 +87,8 @@ class Match:
             ))
         print " ========================== "
         for entry in self.results["funcs"]:
-            print(" = [{}] from [{}] and [{}] from [{}] isomorphism: {} possible_isomorphism: {} = ".format(
+            print(" = [{}] from [{}] and [{}] from [{}] \
+                  isomorphism: {} possible_isomorphism: {} = ".format(
                 entry["first"]["binary"],
                 entry["first"]["func"],
                 entry["second"]["binary"],
